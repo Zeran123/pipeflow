@@ -1,1 +1,0 @@
-{ "msgtype": "markdown", "markdown": { "content": "[{{.Status}}] {{.Summary}}\n>AlertName:{{.Alertname}}\n >Instance:{{.Instance}}\n >StartAt:{{.StartAt}}" } }

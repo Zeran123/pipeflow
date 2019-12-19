@@ -1,0 +1,6 @@
+{
+  "msgtype": "markdown",
+  "markdown": {
+    "content": "<font color=\"{{ if eq .Status "resolved"}}info{{else}}warning{{end}}\">[{{ .Status }}]</font> {{.Summary}}\n > <font color=\"comment\">告警名称:</font> {{.Alertname}}\n > <font color=\"comment\">告警实例:</font> {{.Instance}}\n > <font color=\"comment\">开始时间:</font> {{.StartAt}}"
+  }
+}
