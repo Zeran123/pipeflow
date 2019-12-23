@@ -5,17 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zeran2048/pipeflow/bot"
 )
-
-const dbPath = "data.db"
-const dbBucket = "Bots"
-
-type Bot struct {
-	Source string
-	Target string
-	Url    string
-	Id     string
-}
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
@@ -26,13 +17,11 @@ func setupRouter() *gin.Engine {
 	r.POST("/bots", func(c *gin.Context) {
 		data, _ := c.GetRawData()
 
-		source := GetJsonStrValue(data, "source")
-		target := GetJsonStrValue(data, "target")
-		url := GetJsonStrValue(data, "url")
-
-		bot := Bot{source, target, url, ""}
-		db := Blot{dbPath, dbBucket}
-		savedBot, err := db.save(bot)
+		b := bot.Store{}
+		b.Source = bot.GetJsonStrValue(data, "source")
+		b.Target = bot.GetJsonStrValue(data, "target")
+		b.Url = bot.GetJsonStrValue(data, "url")
+		savedBot, err := b.Save()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
@@ -42,9 +31,7 @@ func setupRouter() *gin.Engine {
 
 	// 获取所有WebHook机器人的配置
 	r.GET("/bots", func(c *gin.Context) {
-
-		db := Blot{dbPath, dbBucket}
-		bots, err := db.list()
+		bots, err := bot.List()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
@@ -56,8 +43,9 @@ func setupRouter() *gin.Engine {
 	// 删除WebHook机器人配置
 	r.DELETE("bots/:id", func(c *gin.Context) {
 		id := c.Params.ByName("id")
-		db := Blot{dbPath, dbBucket}
-		err := db.del(id)
+		b := bot.Store{}
+		b.Id = id
+		err := b.Del()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
@@ -68,15 +56,14 @@ func setupRouter() *gin.Engine {
 	// 处理WebHook内容及推送消息到Target
 	r.POST("/bots/:id", func(c *gin.Context) {
 		id := c.Params.ByName("id")
-		db := Blot{dbPath, dbBucket}
-		bot, err := db.get(id)
+		b, err := bot.Get(id)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 		data, _ := c.GetRawData()
-		if bot.Source == "alertmanager" {
-			ProcessFromAlertManager(bot, data)
+		if b.Source == "alertmanager" {
+			bot.ProcessFromAlertManager(b, data)
 		}
 		c.String(http.StatusOK, "OK")
 	})

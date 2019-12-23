@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ type Alert struct {
 	StartAt   string
 }
 
-func ProcessFromAlertManager(bot Bot, rawData []byte) {
+func ProcessFromAlertManager(bot Store, rawData []byte) {
 	if bot.Target == "wechat" {
 		alerts := formatAlert2WechatWork(rawData)
 		sendAlert2WechatWork(alerts, bot.Url)

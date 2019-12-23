@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"bytes"
@@ -9,9 +9,9 @@ import (
 )
 
 type Db interface {
-	save(bot Bot) (Bot, error)
-	list() ([]Bot, error)
-	get(id string) (Bot, error)
+	save(s Store) (Store, error)
+	list() ([]Store, error)
+	get(id string) (Store, error)
 	del(id string) error
 }
 
@@ -20,29 +20,29 @@ type Blot struct {
 	bucketName string
 }
 
-func (b Blot) save(bot Bot) (Bot, error) {
+func (b Blot) save(s Store) (Store, error) {
 	db, err := bolt.Open(b.filePath, 0600, nil)
 	if err != nil {
-		return bot, err
+		return s, err
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
-		bot.Id = RandStr(36)
+		s.Id = RandStr(36)
 		b, _ := tx.CreateBucketIfNotExists([]byte(b.bucketName))
 		var buf bytes.Buffer
 		enc := gob.NewEncoder(&buf)
-		err := enc.Encode(bot)
-		err = b.Put([]byte(bot.Id), buf.Bytes())
+		err := enc.Encode(s)
+		err = b.Put([]byte(s.Id), buf.Bytes())
 		return err
 	})
 	defer db.Close()
 	if err != nil {
-		return bot, err
+		return s, err
 	}
-	return bot, nil
+	return s, nil
 }
 
-func (b Blot) list() ([]Bot, error) {
-	bots := make([]Bot, 0, 5)
+func (b Blot) list() ([]Store, error) {
+	ss := make([]Store, 0, 5)
 	db, err := bolt.Open(b.filePath, 0600, nil)
 	if err != nil {
 		return nil, err
@@ -51,14 +51,14 @@ func (b Blot) list() ([]Bot, error) {
 		b := tx.Bucket([]byte(b.bucketName))
 		c := b.Cursor()
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			var bot Bot
+			var s Store
 			buf := bytes.NewBuffer(v)
 			enc := gob.NewDecoder(buf)
-			err := enc.Decode(&bot)
+			err := enc.Decode(&s)
 			if err != nil {
 				log.Fatal(err)
 			}
-			bots = append(bots, bot)
+			ss = append(ss, s)
 		}
 		return err
 	})
@@ -66,28 +66,28 @@ func (b Blot) list() ([]Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bots, nil
+	return ss, nil
 }
 
-func (b Blot) get(id string) (Bot, error) {
-	var bot Bot
+func (b Blot) get(id string) (Store, error) {
+	var s Store
 	db, err := bolt.Open(dbPath, 0600, nil)
 	if err != nil {
-		return bot, err
+		return s, err
 	}
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(dbBucket))
 		v := b.Get([]byte(id))
 		buf := bytes.NewBuffer(v)
 		enc := gob.NewDecoder(buf)
-		err := enc.Decode(&bot)
+		err := enc.Decode(&s)
 		return err
 	})
 	defer db.Close()
 	if err != nil {
-		return bot, err
+		return s, err
 	}
-	return bot, nil
+	return s, nil
 }
 
 func (b Blot) del(id string) error {
