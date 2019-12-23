@@ -10,7 +10,7 @@ import (
 	"github.com/buger/jsonparser"
 )
 
-const toWechatTmplPath = "tmpl/alertmanager2wechat"
+const toWechatTmplPath = "tmpl/alertmanager2wechat.tmpl"
 
 type Alert struct {
 	Status    string
