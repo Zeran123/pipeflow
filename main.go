@@ -15,12 +15,12 @@ func setupRouter() *gin.Engine {
 	// 配置的内容为：
 	// { source: "alertmanager", target: "wechatwork", url: "https://qyapi.weixin.qq.com/cgi-bin/xxx" }
 	r.POST("/bots", func(c *gin.Context) {
-		data, _ := c.GetRawData()
-
+		raw, _ := c.GetRawData()
+		o := bot.JsonObj{Data: raw}
 		b := bot.Store{}
-		b.Source = bot.GetJsonStrValue(data, "source")
-		b.Target = bot.GetJsonStrValue(data, "target")
-		b.Url = bot.GetJsonStrValue(data, "url")
+		b.Source = o.GetStr("source")
+		b.Target = o.GetStr("target")
+		b.Url = o.GetStr("url")
 		savedBot, err := b.Save()
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
@@ -64,6 +64,8 @@ func setupRouter() *gin.Engine {
 		data, _ := c.GetRawData()
 		if b.Source == "alertmanager" {
 			bot.ProcessFromAlertManager(b, data)
+		} else if b.Source == "gitlab" {
+			bot.ProcessFromGitlab(b, data)
 		}
 		c.String(http.StatusOK, "OK")
 	})

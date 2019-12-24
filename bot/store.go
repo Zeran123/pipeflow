@@ -3,6 +3,8 @@ package bot
 const dbPath = "data.db"
 const dbBucket = "Bots"
 
+const wechatTarget = "wechat"
+
 type Store struct {
 	Source string
 	Target string

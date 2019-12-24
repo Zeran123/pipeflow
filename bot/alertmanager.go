@@ -2,15 +2,11 @@ package bot
 
 import (
 	"bytes"
-	"net/http"
-	"strings"
 	"text/template"
 	"time"
 
 	"github.com/buger/jsonparser"
 )
-
-const toWechatTmplPath = "tmpl/alertmanager2wechat.tmpl"
 
 type Alert struct {
 	Status    string
@@ -20,34 +16,31 @@ type Alert struct {
 	StartAt   string
 }
 
-func ProcessFromAlertManager(bot Store, rawData []byte) {
-	if bot.Target == "wechat" {
+func (a Alert) Format() string {
+	buf := new(bytes.Buffer)
+	tmpl, _ := template.ParseFiles("tmpl/alertmanager/alert2wechat.tmpl")
+	tmpl.Execute(buf, a)
+	return buf.String()
+}
+
+func ProcessFromAlertManager(s Store, rawData []byte) {
+	if s.Target == wechatTarget {
 		alerts := formatAlert2WechatWork(rawData)
-		sendAlert2WechatWork(alerts, bot.Url)
+		Send2Wechat(s, alerts)
 	}
 }
 
-func formatAlert2WechatWork(rawData []byte) []Alert {
-	alerts := make([]Alert, 0, 5)
+func formatAlert2WechatWork(rawData []byte) []interface{} {
+	alerts := make([]interface{}, 0, 5)
 	jsonparser.ArrayEach(rawData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		startTime, err := time.Parse(time.RFC3339, GetJsonStrValue(value, "startsAt"))
-		msg := Alert{GetJsonStrValue(value, "status"),
-			GetJsonStrValue(value, "annotations", "description"),
-			GetJsonStrValue(value, "labels", "alertname"),
-			GetJsonStrValue(value, "labels", "instance"),
+		o := JsonObj{value}
+		startTime, err := time.Parse(time.RFC3339, o.GetStr("startsAt"))
+		msg := Alert{o.GetStr("status"),
+			o.GetStr("annotations", "description"),
+			o.GetStr("labels", "alertname"),
+			o.GetStr("labels", "instance"),
 			startTime.Format("01-02 15:04:05")}
 		alerts = append(alerts, msg)
 	}, "alerts")
 	return alerts
-}
-
-func sendAlert2WechatWork(alerts []Alert, url string) {
-	for i := 0; i < len(alerts); i++ {
-		buf := new(bytes.Buffer)
-		tmpl, _ := template.ParseFiles(toWechatTmplPath)
-		tmpl.Execute(buf, alerts[i])
-		http.Post(url,
-			"application/json",
-			strings.NewReader(buf.String()))
-	}
 }
