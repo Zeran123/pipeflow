@@ -1,9 +1,7 @@
 package bot
 
 import (
-	"bytes"
 	"strings"
-	"text/template"
 
 	"github.com/buger/jsonparser"
 )
@@ -37,24 +35,43 @@ type GitlabPushEvent struct {
 type GitlabCommit struct {
 	Id      string
 	Message string
+	Url     string
 }
 
 type GitlabAssignee struct {
 	AssigneeName string
 }
 
+type GitlabComment struct {
+	GitlabEvent
+	Note         string
+	NoteType     string
+	Url          string
+	MergeRequest GitlabCommentOnMergeRequest
+	Commit       GitlabCommit
+	Issue        GitlabIssue
+}
+
+type GitlabCommentOnMergeRequest struct {
+	Id    int64
+	Title string
+}
+
+type GitlabIssue struct {
+	Id    int64
+	Title string
+}
+
 func (e GitlabMergeRequestEvent) Format() string {
-	buf := new(bytes.Buffer)
-	tmpl, _ := template.ParseFiles("tmpl/gitlab/mergerequest2wechat.tmpl")
-	tmpl.Execute(buf, e)
-	return buf.String()
+	return Format(e, "tmpl/gitlab/mergerequest2wechat.tmpl")
 }
 
 func (e GitlabPushEvent) Format() string {
-	buf := new(bytes.Buffer)
-	tmpl, _ := template.ParseFiles("tmpl/gitlab/push2wechat.tmpl")
-	tmpl.Execute(buf, e)
-	return buf.String()
+	return Format(e, "tmpl/gitlab/push2wechat.tmpl")
+}
+
+func (e GitlabComment) Format() string {
+	return Format(e, "tmpl/gitlab/comment2wechat.tmpl")
 }
 
 func ProcessFromGitlab(s Store, rawData []byte) {
@@ -66,13 +83,15 @@ func ProcessFromGitlab(s Store, rawData []byte) {
 			events = readMergeRequestContentFromGitlab(rawData)
 		} else if event == "push" {
 			events = readPushContentFromGitlab(rawData)
+		} else if event == "note" {
+			events = readCommentContentFromGitlab(rawData)
 		}
 	}
 	Send2Wechat(s, events)
 }
 
 func readMergeRequestContentFromGitlab(rawData []byte) []interface{} {
-	gitlabs := make([]interface{}, 0, 5)
+	gitlabs := make([]interface{}, 0, 1)
 	o := JsonObj{rawData}
 	msg := GitlabMergeRequestEvent{}
 	msg.MergeRequestId = o.GetInt("object_attributes", "iid")
@@ -89,7 +108,7 @@ func readMergeRequestContentFromGitlab(rawData []byte) []interface{} {
 }
 
 func readPushContentFromGitlab(rawData []byte) []interface{} {
-	gitlabs := make([]interface{}, 0, 5)
+	gitlabs := make([]interface{}, 0, 1)
 	o := JsonObj{rawData}
 	msg := GitlabPushEvent{}
 	msg.UserName = o.GetStr("user_name")
@@ -107,6 +126,27 @@ func readPushContentFromGitlab(rawData []byte) []interface{} {
 		commits = append(commits, c)
 	}, "commits")
 	msg.Commits = commits
+	gitlabs = append(gitlabs, msg)
+	return gitlabs
+}
+
+func readCommentContentFromGitlab(rawData []byte) []interface{} {
+	gitlabs := make([]interface{}, 0, 1)
+	o := JsonObj{rawData}
+	msg := GitlabComment{}
+	msg.Note = o.GetStr("object_attributes", "note")
+	msg.NoteType = o.GetStr("object_attributes", "noteable_type")
+	msg.UserName = o.GetStr("user", "name")
+	msg.RepositoryName = o.GetStr("repository", "name")
+	msg.RepositoryHomePage = o.GetStr("repository", "homepage")
+	msg.ProjectName = o.GetStr("project", "name")
+	msg.Url = o.GetStr("object_attributes", "url")
+	msg.MergeRequest = GitlabCommentOnMergeRequest{o.GetInt("merge_request", "iid"), o.GetStr("merge_request", "title")}
+	msg.Commit = GitlabCommit{o.GetStr("commit", "id"), o.GetStr("commit", "message"), o.GetStr("commit", "url")}
+	if msg.Commit.Id != "" {
+		msg.Commit.Id = strings.ToUpper(msg.Commit.Id[0:6])
+	}
+	msg.Issue = GitlabIssue{o.GetInt("issue", "iid"), o.GetStr("issue", "title")}
 	gitlabs = append(gitlabs, msg)
 	return gitlabs
 }

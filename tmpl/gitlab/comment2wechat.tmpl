@@ -1,0 +1,19 @@
+{
+    "msgtype": "markdown",
+    "markdown": {
+    "content": "{{ if eq .NoteType "MergeRequest" }}
+    {{.UserName}} <font color=\"info\">commented</font> \n 
+    <font color=\"comment\">on merge request</font> [!{{.MergeRequest.Id}}: {{.MergeRequest.Title}}]({{.Url}}) \n 
+    <font color=\"comment\">in</font> [{{.RepositoryName}}]({{.RepositoryHomePage}}) \n 
+    > {{.Note}}"
+    {{ else if eq .NoteType "Commit" }}
+    {{.UserName}} <font color=\"info\">commented</font> \n 
+    <font color=\"comment\">on commit</font> [{{.Commit.Id}}]({{.Commit.Url}}) | <font color=\"comment\">in</font> [{{.RepositoryName}}]({{.RepositoryHomePage}}) \n 
+    > {{.Note}}"
+    {{ else if eq .NoteType "Issue" }}
+    {{.UserName}} <font color=\"info\">commented on issue</font> [{{.Issue.Id}}: {{.Issue.Title}}]({{.Url}}) \n 
+    <font color=\"comment\">in</font> [{{.RepositoryName}}]({{.RepositoryHomePage}}) \n 
+    > {{.Note}}"
+    {{ end }}
+    }
+}

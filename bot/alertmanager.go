@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"bytes"
-	"text/template"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -17,10 +15,7 @@ type Alert struct {
 }
 
 func (a Alert) Format() string {
-	buf := new(bytes.Buffer)
-	tmpl, _ := template.ParseFiles("tmpl/alertmanager/alert2wechat.tmpl")
-	tmpl.Execute(buf, a)
-	return buf.String()
+	return Format(a, "tmpl/alertmanager/alert2wechat.tmpl")
 }
 
 func ProcessFromAlertManager(s Store, rawData []byte) {

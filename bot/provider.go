@@ -1,15 +1,16 @@
 package bot
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"strings"
+	"text/template"
 )
 
 type Provider interface {
 	Format() string
 }
-
 
 func Send2Wechat(s Store, data []interface{}) {
 	for _, any := range data {
@@ -22,4 +23,11 @@ func Send2Wechat(s Store, data []interface{}) {
 				strings.NewReader(strVal))
 		}
 	}
+}
+
+func Format(e interface{}, tmplPath string) string {
+	buf := new(bytes.Buffer)
+	tmpl, _ := template.ParseFiles(tmplPath)
+	tmpl.Execute(buf, e)
+	return strings.ReplaceAll(buf.String(), "    ", "")
 }
