@@ -1,0 +1,7 @@
+{
+    "msgtype": "markdown",
+    "markdown": {
+    "content": "{{.UserName}} pushed to branch <font color=\"info\">{{.Branch}}</font>\n in [{{.RepositoryName}}]({{.RepositoryHomePage}}) \n {{range $i, $v := .Commits}}> <font color=\"comment\">{{$v.Id}}</font> - {{$v.Message}}\n{{end}}
+"
+    }
+}

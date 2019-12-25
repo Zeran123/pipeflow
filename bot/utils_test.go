@@ -4,17 +4,6 @@ import (
 	"testing"
 )
 
-func TestGetJsonStrValue(t *testing.T) {
-	var (
-		in       = []byte("{\"hello\": {\"go\": \"world\"}}")
-		expected = "world"
-	)
-	actual := GetJsonStrVal(in, "hello", "go")
-	if actual != expected {
-		t.Errorf("GetJsonStrValue(%s) = %s, expected %s", in, actual, expected)
-	}
-}
-
 func TestRandStr(t *testing.T) {
 	var (
 		in       = 32

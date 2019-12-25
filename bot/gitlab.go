@@ -2,7 +2,10 @@ package bot
 
 import (
 	"bytes"
+	"strings"
 	"text/template"
+
+	"github.com/buger/jsonparser"
 )
 
 type GitlabEvent struct {
@@ -25,6 +28,17 @@ type GitlabMergeRequestEvent struct {
 	Assignee       GitlabAssignee
 }
 
+type GitlabPushEvent struct {
+	GitlabEvent
+	Branch  string
+	Commits []GitlabCommit
+}
+
+type GitlabCommit struct {
+	Id      string
+	Message string
+}
+
 type GitlabAssignee struct {
 	AssigneeName string
 }
@@ -36,15 +50,25 @@ func (e GitlabMergeRequestEvent) Format() string {
 	return buf.String()
 }
 
+func (e GitlabPushEvent) Format() string {
+	buf := new(bytes.Buffer)
+	tmpl, _ := template.ParseFiles("tmpl/gitlab/push2wechat.tmpl")
+	tmpl.Execute(buf, e)
+	return buf.String()
+}
+
 func ProcessFromGitlab(s Store, rawData []byte) {
+	var events []interface{}
 	o := JsonObj{rawData}
 	event := o.GetStr("object_kind")
 	if s.Target == wechatTarget {
 		if event == "merge_request" {
-			events := readMergeRequestContentFromGitlab(rawData)
-			Send2Wechat(s, events)
+			events = readMergeRequestContentFromGitlab(rawData)
+		} else if event == "push" {
+			events = readPushContentFromGitlab(rawData)
 		}
 	}
+	Send2Wechat(s, events)
 }
 
 func readMergeRequestContentFromGitlab(rawData []byte) []interface{} {
@@ -60,6 +84,29 @@ func readMergeRequestContentFromGitlab(rawData []byte) []interface{} {
 	msg.RepositoryHomePage = o.GetStr("repository", "homepage")
 	msg.ProjectName = o.GetStr("project", "name")
 	msg.Assignee = GitlabAssignee{o.GetStr("object_attributes", "assignee", "name")}
+	gitlabs = append(gitlabs, msg)
+	return gitlabs
+}
+
+func readPushContentFromGitlab(rawData []byte) []interface{} {
+	gitlabs := make([]interface{}, 0, 5)
+	o := JsonObj{rawData}
+	msg := GitlabPushEvent{}
+	msg.UserName = o.GetStr("user_name")
+	msg.RepositoryName = o.GetStr("repository", "name")
+	msg.RepositoryHomePage = o.GetStr("repository", "homepage")
+	msg.ProjectName = o.GetStr("project", "name")
+	msg.Branch = o.GetStr("ref")
+	msg.Branch = msg.Branch[strings.LastIndex(msg.Branch, "/")+1 : len(msg.Branch)]
+	commits := make([]GitlabCommit, 0, 5)
+	jsonparser.ArrayEach(rawData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		co := JsonObj{value}
+		c := GitlabCommit{}
+		c.Id = strings.ToUpper(co.GetStr("id")[0:6])
+		c.Message = co.GetStr("message")
+		commits = append(commits, c)
+	}, "commits")
+	msg.Commits = commits
 	gitlabs = append(gitlabs, msg)
 	return gitlabs
 }

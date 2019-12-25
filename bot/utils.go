@@ -1,10 +1,7 @@
 package bot
 
 import (
-	"fmt"
 	"math/rand"
-	"net/http"
-	"strings"
 	"time"
 )
 
@@ -25,17 +22,4 @@ func RandStr(strlen int) string {
 		data[i] = byte(num)
 	}
 	return string(data)
-}
-
-func Send2Wechat(s Store, data []interface{}) {
-	for _, any := range data {
-		if provider, ok := (any).(Provider); ok {
-			strVal := provider.Format()
-			fmt.Println(strVal)
-			fmt.Println("send to wechat bot : " + s.Url)
-			http.Post(s.Url,
-				"application/json",
-				strings.NewReader(strVal))
-		}
-	}
 }
