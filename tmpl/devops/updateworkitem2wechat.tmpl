@@ -1,0 +1,11 @@
+{
+"msgtype": "markdown",
+"markdown": {
+"content": "{{.WorkItemType}} [#{{.Resource.Id}}: {{.Resource.Title}} ]({{.Resource.Url}}) \n
+<font color=\"comment\">Updated By</font> {{.UpdatedBy}} | <font color=\"comment\">From</font> {{.ProjectName}}
+{{if ne .AssignedTo ""}}> AssignedTo: <font color=\"info\">{{.AssignedTo}}</font>{{end}}
+{{if ne .State ""}}> State: <font color=\"info\">{{.State}}</font>{{end}}
+{{if ne .Reason ""}}> Reason: <font color=\"info\">{{.Reason}}</font>{{end}}
+"
+}
+}

@@ -66,6 +66,8 @@ func setupRouter() *gin.Engine {
 			bot.ProcessFromAlertManager(b, data)
 		} else if b.Source == "gitlab" {
 			bot.ProcessFromGitlab(b, data)
+		} else if b.Source == "devops" {
+			bot.ProcessFromDevOps(b, data)
 		}
 		c.String(http.StatusOK, "OK")
 	})
@@ -76,5 +78,5 @@ func setupRouter() *gin.Engine {
 func main() {
 	r := setupRouter()
 	// Listen and Server in 0.0.0.0:8080
-	r.Run("127.0.0.1:8080")
+	r.Run(":8080")
 }
