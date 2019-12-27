@@ -14,7 +14,7 @@ func setupRouter() *gin.Engine {
 	// 根据机器人的配置生成Id，用于生成WebHook的地址
 	// 配置的内容为：
 	// { source: "alertmanager", target: "wechatwork", url: "https://qyapi.weixin.qq.com/cgi-bin/xxx" }
-	r.POST("/bots", func(c *gin.Context) {
+	r.POST("/bot", func(c *gin.Context) {
 		raw, _ := c.GetRawData()
 		o := bot.JsonObj{Data: raw}
 		b := bot.Store{}
@@ -41,7 +41,7 @@ func setupRouter() *gin.Engine {
 	})
 
 	// 删除WebHook机器人配置
-	r.DELETE("bots/:id", func(c *gin.Context) {
+	r.DELETE("bot/:id", func(c *gin.Context) {
 		id := c.Params.ByName("id")
 		b := bot.Store{}
 		b.Id = id
@@ -54,7 +54,7 @@ func setupRouter() *gin.Engine {
 	})
 
 	// 处理WebHook内容及推送消息到Target
-	r.POST("/bots/:id", func(c *gin.Context) {
+	r.POST("/bot/:id", func(c *gin.Context) {
 		id := c.Params.ByName("id")
 		b, err := bot.Get(id)
 		if err != nil {
