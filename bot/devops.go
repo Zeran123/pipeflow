@@ -2,7 +2,10 @@ package bot
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/buger/jsonparser"
 )
 
 type DevOpsCreateWorkItem struct {
@@ -21,6 +24,15 @@ type DevOpsCommentWorkItem struct {
 	ActivatedBy string
 }
 
+type DevOpsBuildCompleted struct {
+	DevOpsWorkItem
+	BuildId      int64
+	BuildNumber  string
+	BuildUrl     string
+	RequestedFor string
+	Status       string
+}
+
 type DevOpsWorkItem struct {
 	Resource     DevOpsResource
 	WorkItemType string
@@ -28,6 +40,8 @@ type DevOpsWorkItem struct {
 	AssignedTo   string
 	State        string
 	Reason       string
+	StartTime    string
+	FinishTime   string
 }
 
 type DevOpsResource struct {
@@ -48,6 +62,10 @@ func (i DevOpsCommentWorkItem) Format() string {
 	return Format(i, "tmpl/devops/commentworkitem2wechat.tmpl")
 }
 
+func (i DevOpsBuildCompleted) Format() string {
+	return Format(i, "tmpl/devops/buildcompleted2wechat.tmpl")
+}
+
 func ProcessFromDevOps(s Store, rawData []byte) {
 	var events []interface{}
 	o := JsonObj{rawData}
@@ -59,6 +77,8 @@ func ProcessFromDevOps(s Store, rawData []byte) {
 			events = readWorkItemUpdateContenxtFromDevOps(rawData)
 		} else if event == "workitem.commented" {
 			events = readWorkItemCommentContenxtFromDevOps(rawData)
+		} else if event == "build.complete" {
+			events = readBuildCompletedContenxtFromDevOps(rawData)
 		}
 	}
 	Send2Wechat(s, events)
@@ -113,6 +133,28 @@ func readWorkItemCommentContenxtFromDevOps(rawData []byte) []interface{} {
 	item.Resource.Id = o.GetInt("resource", "id")
 	item.Resource.Title = o.GetStr("resource", "fields", "System.Title")
 	item.Resource.Url = o.GetStr("resource", "_links", "html", "href")
+	contents = append(contents, item)
+	return contents
+}
+
+func readBuildCompletedContenxtFromDevOps(rawData []byte) []interface{} {
+	contents := make([]interface{}, 0, 1)
+	o := JsonObj{rawData}
+	item := DevOpsBuildCompleted{}
+	item.ProjectName = o.GetStr("resource", "definition", "name")
+	item.BuildNumber = o.GetStr("resource", "buildNumber")
+	item.BuildId = o.GetInt("resource", "id")
+	item.Status = strings.ToUpper(o.GetStr("resource", "status"))
+	item.Reason = o.GetStr("resource", "reason")
+	item.StartTime = FormatTime(o.GetStr("resource", "startTime"))
+	item.FinishTime = FormatTime(o.GetStr("resource", "finishTime"))
+	requestedFor := ""
+	jsonparser.ArrayEach(rawData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		o := JsonObj{value}
+		requestedFor = o.GetStr("requestedFor", "displayName")
+	}, "resource", "requests")
+	item.RequestedFor = requestedFor
+	item.BuildUrl = o.GetStr("resourceContainers", "project", "baseUrl") + o.GetStr("resourceContainers", "project", "id") + "/_build/results?buildId=" + strconv.FormatInt(item.BuildId, 10)
 	contents = append(contents, item)
 	return contents
 }

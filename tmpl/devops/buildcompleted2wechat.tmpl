@@ -1,0 +1,11 @@
+{
+"msgtype": "markdown",
+"markdown": {
+"content": "Build Completed [[{{.BuildNumber}}]]({{.BuildUrl}}) {{if eq .Status "SUCCEEDED"}}<font color=\"info\">{{.Status}}</font>{{else}}<font color=\"warning\">{{.Status}}</font>{{end}}  \n
+<font color=\"comment\">Trigger By</font> {{.RequestedFor}} | <font color=\"comment\">From</font> {{.ProjectName}}
+> <font color=\"comment\">Reason: </font> {{.Reason}}
+> <font color=\"comment\">Start: </font> {{.StartTime}}
+> <font color=\"comment\">Finish: </font> {{.FinishTime}}
+"
+}
+}

@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -22,4 +23,14 @@ func RandStr(strlen int) string {
 		data[i] = byte(num)
 	}
 	return string(data)
+}
+
+func FormatTime(str string) string {
+	time, err := time.Parse(time.RFC3339, str)
+	if err == nil {
+		return time.Format("01-02 15:04:05")
+	} else {
+		fmt.Println(err)
+		return ""
+	}
 }

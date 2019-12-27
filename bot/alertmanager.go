@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"time"
-
 	"github.com/buger/jsonparser"
 )
 
@@ -29,12 +27,11 @@ func formatAlert2WechatWork(rawData []byte) []interface{} {
 	alerts := make([]interface{}, 0, 5)
 	jsonparser.ArrayEach(rawData, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		o := JsonObj{value}
-		startTime, err := time.Parse(time.RFC3339, o.GetStr("startsAt"))
 		msg := Alert{o.GetStr("status"),
 			o.GetStr("annotations", "description"),
 			o.GetStr("labels", "alertname"),
 			o.GetStr("labels", "instance"),
-			startTime.Format("01-02 15:04:05")}
+			FormatTime(o.GetStr("startsAt"))}
 		alerts = append(alerts, msg)
 	}, "alerts")
 	return alerts
