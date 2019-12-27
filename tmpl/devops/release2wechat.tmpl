@@ -1,0 +1,9 @@
+{
+"msgtype": "markdown",
+"markdown": {
+"content": "Release {{if eq .Status "SUCCEEDED"}}<font color=\"info\">{{.Status}}</font>{{else if eq .Status "QUEUED"}}{{.Status}}{{else}}<font color=\"warning\">{{.Status}}</font>{{end}} [[{{.ReleaseName}}]]({{.ReleaseUrl}}) \n
+<font color=\"comment\">Deployment </font> {{.DeploymentName}} | <font color=\"comment\">From</font> {{.ProjectName}}
+> <font color=\"comment\">Trigger: </font> {{.TriggerReason}}
+"
+}
+}

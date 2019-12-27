@@ -26,6 +26,7 @@ func Send2Wechat(s Store, data []interface{}) {
 }
 
 func Format(e interface{}, tmplPath string) string {
+	fmt.Println(e)
 	buf := new(bytes.Buffer)
 	tmpl, _ := template.ParseFiles(tmplPath)
 	tmpl.Execute(buf, e)

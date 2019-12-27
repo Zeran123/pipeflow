@@ -33,6 +33,15 @@ type DevOpsBuildCompleted struct {
 	Status       string
 }
 
+type DevOpsRelease struct {
+	DevOpsWorkItem
+	ReleaseName    string
+	ReleaseUrl     string
+	DeploymentName string
+	TriggerReason  string
+	Status         string
+}
+
 type DevOpsWorkItem struct {
 	Resource     DevOpsResource
 	WorkItemType string
@@ -66,6 +75,10 @@ func (i DevOpsBuildCompleted) Format() string {
 	return Format(i, "tmpl/devops/buildcompleted2wechat.tmpl")
 }
 
+func (i DevOpsRelease) Format() string {
+	return Format(i, "tmpl/devops/release2wechat.tmpl")
+}
+
 func ProcessFromDevOps(s Store, rawData []byte) {
 	var events []interface{}
 	o := JsonObj{rawData}
@@ -79,6 +92,8 @@ func ProcessFromDevOps(s Store, rawData []byte) {
 			events = readWorkItemCommentContenxtFromDevOps(rawData)
 		} else if event == "build.complete" {
 			events = readBuildCompletedContenxtFromDevOps(rawData)
+		} else if event == "ms.vss-release.deployment-started-event" || event == "ms.vss-release.deployment-completed-event" {
+			events = readReleaseContenxtFromDevOps(rawData)
 		}
 	}
 	Send2Wechat(s, events)
@@ -155,6 +170,20 @@ func readBuildCompletedContenxtFromDevOps(rawData []byte) []interface{} {
 	}, "resource", "requests")
 	item.RequestedFor = requestedFor
 	item.BuildUrl = o.GetStr("resourceContainers", "project", "baseUrl") + o.GetStr("resourceContainers", "project", "id") + "/_build/results?buildId=" + strconv.FormatInt(item.BuildId, 10)
+	contents = append(contents, item)
+	return contents
+}
+
+func readReleaseContenxtFromDevOps(rawData []byte) []interface{} {
+	contents := make([]interface{}, 0, 1)
+	o := JsonObj{rawData}
+	item := DevOpsRelease{}
+	item.ProjectName = o.GetStr("resource", "project", "name")
+	item.DeploymentName = o.GetStr("resource", "environment", "name")
+	item.ReleaseName = o.GetStr("resource", "environment", "releaseDefinition", "name")
+	item.ReleaseUrl = o.GetStr("resource", "environment", "releaseDefinition", "_links", "web", "href")
+	item.Status = strings.ToUpper(o.GetStr("resource", "environment", "status"))
+	item.TriggerReason = o.GetStr("resource", "environment", "triggerReason")
 	contents = append(contents, item)
 	return contents
 }
